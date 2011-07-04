@@ -39,6 +39,7 @@ $EM_CONF[$_EXTKEY] = array(
 		),
 		'suggests' => array(
 			'phpunit' => '',
+			'jasmine' => '',
 		),
 	),
 );

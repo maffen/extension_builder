@@ -26,6 +26,7 @@
  * Schema for a whole extension
  *
  * @package ExtensionBuilder
+ * @AggregateRoot
  * @version $ID:$
  */
 class Tx_ExtensionBuilder_Domain_Model_Extension {
@@ -39,6 +40,7 @@ class Tx_ExtensionBuilder_Domain_Model_Extension {
 	/**
 	 * Extension's name
 	 * @var string
+	 * @label
 	 */
 	protected $name;
 
@@ -122,6 +124,7 @@ class Tx_ExtensionBuilder_Domain_Model_Extension {
 	/**
 	 * The Persons working on the Extension
 	 * @var array<Tx_ExtensionBuilder_Domain_Model_Person>
+	 *
 	 */
 	protected $persons = array();
 
