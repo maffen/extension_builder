@@ -96,7 +96,7 @@ Ext.regModel('OrderItem', {
 }
  );
 	
-console.log(rootNode);
+//console.log(rootNode);
 
 	ExtensionBuilder.Core.DataStore = Ext.create('Ext.data.TreeStore', {
 //		autoLoad: true,

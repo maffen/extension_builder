@@ -1,3 +1,13 @@
 body, #typo3-docbody {
 	overflow: hidden;
 }
+
+div.addModel label{
+	display: block;
+	float: left;
+	padding: 5px;
+}
+
+div.addModel button {
+	cursor:pointer;
+}
