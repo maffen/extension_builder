@@ -34,6 +34,11 @@ class Tx_ExtensionBuilder_ViewHelpers_Be_ExtDataModelViewHelper extends Tx_Exten
 			$dataModelService->getAggregateRoot()
 		);
 
+		// just for testing/mockup
+		//$fileTreeService = t3lib_div::makeInstance('Tx_ExtensionBuilder_Service_ExtJS_FileTreeService');
+		//$files = $fileTreeService->getFiles(PATH_typo3conf. 'ext/blog_example');
+		//$extOnReadyCode .= 'ExtensionBuilder.Core.fileTree = '.json_encode($files) . ';';
+
 		$this->pageRenderer->addExtOnReadyCode($extOnReadyCode, TRUE);
 	}
 

@@ -48,7 +48,6 @@ class Tx_ExtensionBuilder_Service_ExtJS_DataModelService {
 		}
 
 		$this->sourceFiles = t3lib_div::getAllFilesAndFoldersInPath($this->sourceFiles, $this->sourceFolder, 'php');
-
 		if (!empty($this->excludeFolders)) {
 			$excludeFolders = array();
 			foreach ($this->excludeFolders as $excludeFolder) {

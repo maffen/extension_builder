@@ -11,6 +11,7 @@ Ext.define('ExtensionBuilder.Components.UserInterface.TabPanel', {
 
 		this.on('afterrender', function() {
 			var modules = ExtensionBuilder.Core.getModules();
+			//console.log(modules);
 			Ext.each(modules, function(module) {
 				this.add({
 					xtype: module.alias,
