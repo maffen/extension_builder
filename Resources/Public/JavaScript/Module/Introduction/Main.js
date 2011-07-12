@@ -7,6 +7,7 @@ Ext.define('ExtensionBuilder.Module.Introduction.Main', {
 		Ext.apply(this, {
 			padding: 20,
 			height: '100%',
+			closable:true,
 			html: [
 				'<p class="bodytext">Welcome to the <b>Extension Builder</b>! This page is intended to give you some',
 				'overview about the workflow we suggest.</p><h2>What is this extension builder about?</h2>',

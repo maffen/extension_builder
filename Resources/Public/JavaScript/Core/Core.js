@@ -30,4 +30,5 @@ Ext.define('ExtensionBuilder.Core', {
 
 Ext.onReady(function() {
 	ExtensionBuilder.Core.initialize();
+	Ext.QuickTips.init();
 });

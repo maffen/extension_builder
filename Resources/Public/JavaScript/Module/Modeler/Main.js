@@ -15,80 +15,38 @@ Ext.define('ExtensionBuilder.Module.Modeler.Main', {
 			maxSize: 250,
 			cmargins: '5 0 0 0',
 			collapsed: true,
-			text:'Extension with extKey "Blogexample" loaded in 0.56 s'
+			padding:3,
+			html:'Extension with extKey "Blogexample" loaded in 0.56 s'
 		},{
-			title: 'Models',
+			title: 'Existing Models',
 			region:'west',
+			collapsed:true,
 			width: 175,
 			minSize: 100,
 			maxSize: 250,
 			margins: '0 5 0 0',
-			items: [
-				{
-					title:'New model',
-					html:'<label>New empty model</label><button style="float:right">Add</button>',
-					preventHeader:true,
-					cls:'addModel',
-					style:{
-						margin:'10px 0'
-					}
-				},
-				{
-					title:'Existing models',
-					collapsed:false,
-					collapsible:true,
-					defaults:{
-						cls:'addModel',
-						collapsible:true
-					},
-					items:[{
-						title: 'BlogExample',
-						border: false,
-						iconCls: 'nav',
-						items:[
-							{html:'<label>Blog</label><button style="float:right">Extend</button>'},
-							{html:'<label>Post</label><button style="float:right">Extend</button>'},
-							{html:'<label>Comment</label><button style="float:right">Extend</button>'}
-						]
-					}, {
-						title: 'TYPO3',
-						border: false,
-						iconCls: 'settings',
-						items:[
-							{html:'<label>Frontend-User</label><button style="float:right">Extend</button>'},
-							{html:'<label>Backend-User</label><button style="float:right">Extend</button>'},
-							{html:'<label>Adress <br />(tt_address)</label><button style="float:right">Extend</button>'},
-							{html:'<label>News <br />(tt_news)</label><button style="float:right">Extend</button>'}
-						]
-					}, {
-						title: 'Imported Models',
-						border: false,
-						iconCls: 'settings',
-						items:[
-							{html:'<label>Immo-XML</label><button style="float:right">Add</button>'},
-							{html:'<label>MyExt-&gt;Book</label><button style="float:right">Add</button>'},
-							{html:'<label>MyExt-&gt;Person</label><button style="float:right">Add</button>'},
-							{html:'<label>MyExt-&gt;Author</label><button style="float:right">Add</button>'},
-							{html:'<label>Calendar</label><button style="float:right">Extend</button>'}
-						]
-					}]
-				}
-			]
+			items:Modeler_importList
 		},{
-			title: 'Properties',
+			title: 'Blog Model',
+			id:'ExtensionBuilder.Modeler.propertyPanel',
 			region:'east',
-			width: 175,
+			width: 350,
 			minSize: 100,
-			maxSize: 250,
-			layout: {
-				type: 'accordion',
-				animate: true
-			},
+			maxSize: 350,
 			collapsed: true,
 			items: [
+				Modeler_blogForm,
 				{
-					title:'Blog Properties',
-					collapsible:true
+					title:'Attributes',
+					items:[
+						Modeler_nameForm,
+						Modeler_authorForm,
+						{
+							xtype:'button',
+							text:'Add new property',
+							margin: 5
+						}
+					]
 				}
 			]
 		},{
@@ -100,17 +58,36 @@ Ext.define('ExtensionBuilder.Module.Modeler.Main', {
 			bodyStyle:{
 				'background-color':'#f4e99c'
 			},
-			// dummy uml image for T3DD11
-			html:'<img src="../typo3conf/ext/extension_builder/Resources/Public/Images/uml-blogexample.png" style="margin-top:100px;margin-left:100px" />'
+			items:[
+				{
+					xtype:'button',
+					text: 'Add new model',
+					width: 100,
+					margin: 8,
+					tooltip:'If you want to add existing models, open left panel'
+				},
+				{
+					html:'<img title="Click here to edit properties" id="umlDummy" src="../typo3conf/ext/extension_builder/Resources/Public/Images/uml-blogexample.png" style="margin-top:100px;margin-left:100px;cursor:pointer;" />',
+					bodyStyle:{
+						'background-color':'#f4e99c'
+					},
+					border:false,
+					listeners:{
+						click: {
+				            element: 'el', //bind to the underlying el property on the panel
+				            fn: function(){
+								Ext.getCmp('ExtensionBuilder.Modeler.propertyPanel').expand();
+							}
+				        }
+					}
+				}
+			]
 	}],
 
 	initComponent: function() {
 		Ext.apply(this, {});
-
 		this.callParent(arguments);
 	}
-
-
 });
 
 ExtensionBuilder.Core.registerModule('ExtensionBuilder.Module.Modeler.Main', 'Modeler');

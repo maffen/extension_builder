@@ -1,0 +1,104 @@
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2">
+        <admin:generatorAgent xmlns:admin="http://webns.net/mvcb/" rdf:resource="http://purl.org/NET/erdf/extract"/>
+    </rdf:Description><rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2"/>
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2#oryx-canvas123">
+        <rdf:type rdf:resource="http://oryx-editor.org/canvas"/>
+        <type xmlns="http://oryx-editor.org/">
+            http://b3mn.org/stencilset/UML2.2Class#Diagram
+        </type>
+        <name xmlns="http://oryx-editor.org/"/><author xmlns="http://oryx-editor.org/"/>
+        <mode xmlns="http://oryx-editor.org/">
+            writable
+        </mode>
+        <mode xmlns="http://oryx-editor.org/">
+            fullscreen
+        </mode>
+        <stencilset xmlns="http://oryx-editor.org/" rdf:resource="/oryx///stencilsets/uml2.2/uml2.2.json"/><ssnamespace xmlns="http://oryx-editor.org/" rdf:resource="http://b3mn.org/stencilset/UML2.2Class#"/><render xmlns="http://oryx-editor.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_7EB64F12-80A5-4087-B9CB-B822E05B6A8E"/><render xmlns="http://oryx-editor.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_4C06038A-F98F-46B9-B2D3-0ADFB1F407CE"/><render xmlns="http://oryx-editor.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_BD0429A8-5C1B-473B-B389-074FF2083AB6"/><render xmlns="http://oryx-editor.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_7F694A0F-1172-4365-A697-53CA08941178"/><render xmlns="http://oryx-editor.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_EBAEE28D-FB33-4D83-BDCA-3F143A66B189"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2#oryx_7EB64F12-80A5-4087-B9CB-B822E05B6A8E">
+        <type xmlns="http://oryx-editor.org/">
+            http://b3mn.org/stencilset/UML2.2Class#SimpleClass
+        </type>
+        <classname xmlns="http://oryx-editor.org/">
+            Blog
+        </classname>
+        <abstract xmlns="http://oryx-editor.org/">
+            false
+        </abstract>
+        <bounds xmlns="http://oryx-editor.org/">
+            135,60,235,110
+        </bounds>
+        <outgoing xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_7F694A0F-1172-4365-A697-53CA08941178"/><parent xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx-canvas123"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2#oryx_4C06038A-F98F-46B9-B2D3-0ADFB1F407CE">
+        <type xmlns="http://oryx-editor.org/">
+            http://b3mn.org/stencilset/UML2.2Class#SimpleClass
+        </type>
+        <classname xmlns="http://oryx-editor.org/">
+            Post
+        </classname>
+        <abstract xmlns="http://oryx-editor.org/">
+            false
+        </abstract>
+        <bounds xmlns="http://oryx-editor.org/">
+            330,60,430,110
+        </bounds>
+        <outgoing xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_EBAEE28D-FB33-4D83-BDCA-3F143A66B189"/><parent xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx-canvas123"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2#oryx_BD0429A8-5C1B-473B-B389-074FF2083AB6">
+        <type xmlns="http://oryx-editor.org/">
+            http://b3mn.org/stencilset/UML2.2Class#SimpleClass
+        </type>
+        <classname xmlns="http://oryx-editor.org/">
+            Comment
+        </classname>
+        <abstract xmlns="http://oryx-editor.org/">
+            false
+        </abstract>
+        <bounds xmlns="http://oryx-editor.org/">
+            330,180,430,230
+        </bounds>
+        <parent xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx-canvas123"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2#oryx_7F694A0F-1172-4365-A697-53CA08941178">
+        <type xmlns="http://oryx-editor.org/">
+            http://b3mn.org/stencilset/UML2.2Class#Composition
+        </type>
+        <name xmlns="http://oryx-editor.org/"/>
+        <hidelabels xmlns="http://oryx-editor.org/">
+            true
+        </hidelabels>
+        <cardinalitystart xmlns="http://oryx-editor.org/"/><cardinalityend xmlns="http://oryx-editor.org/"/><rolestart xmlns="http://oryx-editor.org/"/>
+        <roleend xmlns="http://oryx-editor.org/">
+            0..*
+        </roleend>
+        <bounds xmlns="http://oryx-editor.org/">
+            235.51171875,85,329.48828125,85
+        </bounds>
+        <dockers xmlns="http://oryx-editor.org/">
+            50 25 50 25  #
+        </dockers>
+        <outgoing xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_4C06038A-F98F-46B9-B2D3-0ADFB1F407CE"/><parent xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx-canvas123"/><target xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_4C06038A-F98F-46B9-B2D3-0ADFB1F407CE"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://oryx-project.org/oryx/editor;uml2.2#oryx_EBAEE28D-FB33-4D83-BDCA-3F143A66B189">
+        <type xmlns="http://oryx-editor.org/">
+            http://b3mn.org/stencilset/UML2.2Class#Composition
+        </type>
+        <name xmlns="http://oryx-editor.org/"/>
+        <hidelabels xmlns="http://oryx-editor.org/">
+            true
+        </hidelabels>
+        <cardinalitystart xmlns="http://oryx-editor.org/"/><cardinalityend xmlns="http://oryx-editor.org/"/><rolestart xmlns="http://oryx-editor.org/"/>
+        <roleend xmlns="http://oryx-editor.org/">
+            0..*
+        </roleend>
+        <bounds xmlns="http://oryx-editor.org/">
+            380,110.375,380,179.625
+        </bounds>
+        <dockers xmlns="http://oryx-editor.org/">
+            50 25 50 25  #
+        </dockers>
+        <outgoing xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_BD0429A8-5C1B-473B-B389-074FF2083AB6"/><parent xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx-canvas123"/><target xmlns="http://raziel.org/" rdf:resource="http://oryx-project.org/oryx/editor;uml2.2#oryx_BD0429A8-5C1B-473B-B389-074FF2083AB6"/>
+    </rdf:Description>
+</rdf:RDF>

@@ -6,7 +6,8 @@ Ext.define('ExtensionBuilder.Components.UserInterface.Layout', {
 		Ext.apply(this, {
 			height: '100%',
 			layout: 'fit',
-			items: [{
+			items: [
+			{
 				xtype: 'ExtensionBuilder.Components.UserInterface.TabPanel'
 			}]
 		});
@@ -19,4 +20,8 @@ ExtensionBuilder.Core.on('init', function() {
 	Ext.create('ExtensionBuilder.Components.UserInterface.Layout', {
 		renderTo: 'typo3-docbody'
 	});
+	Ext.create('ExtensionBuilder.Components.UserInterface.Header', {
+		renderTo: 'typo3-docheader-row2'
+	});
+
 });

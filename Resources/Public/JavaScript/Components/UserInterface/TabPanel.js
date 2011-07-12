@@ -18,7 +18,7 @@ Ext.define('ExtensionBuilder.Components.UserInterface.TabPanel', {
 					title: module.label
 				});
 			}, this);
-			this.setActiveTab(2);
+			//this.setActiveTab(1);
 		}, this);
 
 		this.callParent(arguments);

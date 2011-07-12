@@ -15,8 +15,8 @@ Ext.define('ExtensionBuilder.Module.Files.Main', {
         var tree = Ext.create('Ext.tree.Panel', {
             xtype: 'treepanel',
             columnWidth: 1 / 3,
-            title: 'Simple Tree',
-            height: 500,
+            title: 'Files',
+            height: 600,
             store: ExtensionBuilder.Core.FileStore,
             rootVisible: true,
             dockedItems: [{
@@ -39,8 +39,10 @@ Ext.define('ExtensionBuilder.Module.Files.Main', {
             layout: 'column',
             items: [tree, {
                 xtype: 'panel',
+				padding:10,
+				border:false,
                 columnWidth: 2 / 3,
-                title: 'form'
+				html:'<p>Here we could show some Information aboute the file and configure the overwrite settings</>',
             }]
         });
         
