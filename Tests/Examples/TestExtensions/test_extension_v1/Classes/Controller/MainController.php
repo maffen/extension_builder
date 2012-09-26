@@ -3,8 +3,8 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2011 John Doe <mail@typo3.com>, TYPO3
- *  
+ *  (c) ###YEAR### John Doe <mail@typo3.com>, TYPO3
+ *
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -29,7 +29,7 @@
  *
  *
  * @package test_extension
- * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License, version 3 or later
+ * @license http://www.gnu.org/licenses/gpl.html GNU General Public License, version 3 or later
  *
  */
 class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controller_ActionController {
@@ -64,7 +64,7 @@ class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controll
 	/**
 	 * action show
 	 *
-	 * @param $main
+	 * @param Tx_TestExtension_Domain_Model_Main $main
 	 * @return void
 	 */
 	public function showAction(Tx_TestExtension_Domain_Model_Main $main) {
@@ -74,7 +74,7 @@ class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controll
 	/**
 	 * action new
 	 *
-	 * @param $newMain
+	 * @param Tx_TestExtension_Domain_Model_Main $newMain
 	 * @dontvalidate $newMain
 	 * @return void
 	 */
@@ -85,7 +85,7 @@ class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controll
 	/**
 	 * action create
 	 *
-	 * @param $newMain
+	 * @param Tx_TestExtension_Domain_Model_Main $newMain
 	 * @return void
 	 */
 	public function createAction(Tx_TestExtension_Domain_Model_Main $newMain) {
@@ -97,7 +97,7 @@ class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controll
 	/**
 	 * action edit
 	 *
-	 * @param $main
+	 * @param Tx_TestExtension_Domain_Model_Main $main
 	 * @return void
 	 */
 	public function editAction(Tx_TestExtension_Domain_Model_Main $main) {
@@ -107,7 +107,7 @@ class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controll
 	/**
 	 * action update
 	 *
-	 * @param $main
+	 * @param Tx_TestExtension_Domain_Model_Main $main
 	 * @return void
 	 */
 	public function updateAction(Tx_TestExtension_Domain_Model_Main $main) {
@@ -119,7 +119,7 @@ class Tx_TestExtension_Controller_MainController extends Tx_Extbase_MVC_Controll
 	/**
 	 * action delete
 	 *
-	 * @param $main
+	 * @param Tx_TestExtension_Domain_Model_Main $main
 	 * @return void
 	 */
 	public function deleteAction(Tx_TestExtension_Domain_Model_Main $main) {

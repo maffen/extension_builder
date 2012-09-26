@@ -58,10 +58,38 @@ extbaseModeling_wiringEditorLanguage.modules.push(
 								}
 							},
 							{
+								type: "boolean",
+								inputParams: {
+									name: "sorting",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.enableSorting,
+									description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_enableSorting,
+									value: false
+								}
+							},
+							{
 								type: "string",
 								inputParams: {
 									name: "description",
+									className: 'bottomBorder',
 									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.description,
+									required: false
+								}
+							},
+							{
+								type: "string",
+								inputParams: {
+									name: "mapToTable",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.mapToTable,
+									description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_mapToTable,
+									required: false
+								}
+							},
+							{
+								type: "string",
+								inputParams: {
+									name: "parentClass",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.parentClass,
+									description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_parentClass,
 									required: false
 								}
 							}
@@ -77,25 +105,58 @@ extbaseModeling_wiringEditorLanguage.modules.push(
 						name: "actionGroup",
 						fields: [
 							{
+								type: "boolean",
+								inputParams: {
+									name: "_default0_list",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.list,
+									value: false
+								}
+							},
+							{
+								type: "boolean",
+								inputParams: {
+									name: "_default1_show",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.show,
+									value: false
+								}
+							},
+							{
+								type: "boolean",
+								inputParams: {
+									name: "_default2_new_create",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.create_new,
+									value: false
+								}
+							},
+							{
+								type: "boolean",
+								inputParams: {
+									name: "_default3_edit_update",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.edit_update,
+									value: false
+								}
+							},
+							{
+								type: "boolean",
+								inputParams: {
+									name: "_default4_delete",
+									label: TYPO3.settings.extensionBuilder._LOCAL_LANG.delete,
+									value: false
+								}
+							},
+							{
 								type: "list",
 								inputParams: {
-									label: "",
-									name: "actions",
+									label: "Custom actions",
+									name: "customActions",
 									sortable: false,
 									elementType: {
-										type: "select",
+										type: "input",
 										inputParams: {
-											name: "actionType",
-											label: TYPO3.settings.extensionBuilder._LOCAL_LANG.actionType,
-											description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_actionType,
-											selectValues: ["show","list","create","update","delete"],
-											selectOptions: [
-												TYPO3.settings.extensionBuilder._LOCAL_LANG.show,
-												TYPO3.settings.extensionBuilder._LOCAL_LANG.list,
-												TYPO3.settings.extensionBuilder._LOCAL_LANG.create_new,
-												TYPO3.settings.extensionBuilder._LOCAL_LANG.edit_update,
-												TYPO3.settings.extensionBuilder._LOCAL_LANG['delete']
-											]
+											name: "customAction",
+											label: TYPO3.settings.extensionBuilder._LOCAL_LANG.customAction,
+											forceAlphaNumeric: true,
+											lcFirst: true
 										}
 									}
 								}
@@ -147,27 +208,42 @@ extbaseModeling_wiringEditorLanguage.modules.push(
 													inputParams: {
 														name: "propertyType",
 														label: TYPO3.settings.extensionBuilder._LOCAL_LANG.propertyType,
-														selectValues: [
+                                                        description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_propertyType,
+                                                        selectValues: [
 															"String",
 															"Text",
+															"RichText",
 															"Integer",
 															"Float",
 															"Boolean",
 															"DateTime",
+															"Date",
+															"Time",
+															"TimeSec",
 															"Select",
 															"File",
-															"Image"
+															"Image",
+															"FileReference",
+															"Folder",
+															"Password"
 														],
 														selectOptions: [
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.string,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.text,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.richText,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.integer,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.floatingPoint,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.boolean,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.dateTime,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.date,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.time,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.timeSec,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.selectList,
 															TYPO3.settings.extensionBuilder._LOCAL_LANG.file,
-															TYPO3.settings.extensionBuilder._LOCAL_LANG.image
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.image,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.fileReference,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.folder,
+															TYPO3.settings.extensionBuilder._LOCAL_LANG.password
 														]
 													}
 												},

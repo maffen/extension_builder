@@ -1,6 +1,6 @@
 {namespace k=Tx_ExtensionBuilder_ViewHelpers}<?php
 {classObject.docComment}
-<f:for each="{classObject.modifierNames}" as="modifierName">{modifierName} </f:for>class {classObject.name}<k:class classObject="{classObject}"  renderElement="parentClass" /> <k:class classObject="{classObject}"  renderElement="interfaces" />{
+<f:if condition="{classObject.modifier}"><f:for each="{classObject.modifierNames}" as="modifierName">{modifierName} </f:for></f:if>class {classObject.name}<k:class classObject="{classObject}"  renderElement="parentClass" /> <k:class classObject="{classObject}"  renderElement="interfaces" />{
 <f:for each="{classObject.constants}" as="constant">
 	/**
 	 *<f:for each="{constant.docComment.getDescriptionLines}" as="descriptionLine">
@@ -17,7 +17,7 @@
 	 *<f:for each="{property.annotations}" as="annotation">
 	 * @{annotation}</f:for>
 	 */
-	<f:for each="{property.modifierNames}" as="modifierName">{modifierName} </f:for>${property.name}<f:if condition="{property.default}"> = {property.value}</f:if>;
+	<f:for each="{property.modifierNames}" as="modifierName">{modifierName} </f:for>${property.name}<f:if condition="{property.hasValue}"><f:then> = {property.value}</f:then><f:else><f:if condition="{property.hasDefaultValue}"> = {property.default}</f:if></f:else></f:if>;
 </f:for><f:for each="{classObject.methods}" as="method"><f:if condition="{method.precedingBlock}">
 	<k:format.removeMultipleNewlines>{method.precedingBlock}</k:format.removeMultipleNewlines>
 	</f:if>

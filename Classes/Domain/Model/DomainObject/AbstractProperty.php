@@ -79,15 +79,24 @@ abstract class Tx_ExtensionBuilder_Domain_Model_DomainObject_AbstractProperty {
 	 *
 	 * @var boolean
 	 */
-	protected $isNew = FALSE;
+	protected $new = TRUE;
+
+	/**
+	 * use RTE in Backend
+	 *
+	 * @var boolean
+	 */
+	protected $useRTE = FALSE;
 
 	/**
 	 *
 	 * @param string $propertyName
 	 * @return void
 	 */
-	public function __construct($propertyName) {
-		$this->name = $propertyName;
+	public function __construct($propertyName = '') {
+		if (!empty($propertyName)) {
+			$this->name = $propertyName;
+		}
 	}
 
 	/**
@@ -225,7 +234,7 @@ abstract class Tx_ExtensionBuilder_Domain_Model_DomainObject_AbstractProperty {
 	 * @return string the field name in lowercase underscore
 	 */
 	public function getFieldName() {
-		$fieldName = Tx_Extbase_Utility_Extension::convertCamelCaseToLowerCaseUnderscored($this->name);
+		$fieldName = t3lib_div::camelCaseToLowerCaseUnderscored($this->name);
 		if (Tx_ExtensionBuilder_Domain_Validator_ExtensionValidator::isReservedMYSQLWord($fieldName)) {
 			$fieldName = $this->domainObject->getExtension()->getShortExtensionKey() . '_' . $fieldName;
 		}
@@ -377,7 +386,7 @@ abstract class Tx_ExtensionBuilder_Domain_Model_DomainObject_AbstractProperty {
 	 * @return string $mappingStatement
 	 */
 	public function getMappingStatement() {
-		if ($this->getFieldName() != Tx_Extbase_Utility_Extension::convertCamelCaseToLowerCaseUnderscored($this->name)) {
+		if ($this->getFieldName() != t3lib_div::camelCaseToLowerCaseUnderscored($this->name)) {
 			return $this->getFieldName() . '.mapOnProperty = ' . $this->name;
 		}
 		else return NULL;
@@ -397,8 +406,8 @@ abstract class Tx_ExtensionBuilder_Domain_Model_DomainObject_AbstractProperty {
 	/**
 	 *
 	 */
-	public function getIsNew() {
-		return $this->isNew;
+	public function isNew() {
+		return $this->new;
 	}
 
 
@@ -406,8 +415,17 @@ abstract class Tx_ExtensionBuilder_Domain_Model_DomainObject_AbstractProperty {
 	 *
 	 * @param boolean $new
 	 */
-	public function setIsNew($isNew) {
-		$this->isNew = $isNew;
+	public function setNew($new) {
+		$this->new = $new;
+	}
+
+	/**
+	 * Getter for $useRTE
+	 *
+	 * @return boolean $useRTE
+	 */
+	public function getUseRTE() {
+		return $this->useRTE;
 	}
 
 }

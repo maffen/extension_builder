@@ -112,7 +112,9 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 			$yamlParser = new Tx_ExtensionBuilder_Utility_SpycYAMLParser();
 			$settings = $yamlParser->YAMLLoadString(file_get_contents($settingsFile));
 		}
-		else t3lib_div::devlog('No settings found: ' . $settingsFile, 'extension_builder', 2);
+		else {
+			t3lib_div::devlog('No settings found: ' . $settingsFile, 'extension_builder', 2);
+		}
 
 		return $settings;
 	}
@@ -135,7 +137,6 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 		if (file_exists($jsonFile)) {
 			// compatibility adaptions for configurations from older versions
 			$extensionConfigurationJSON = json_decode(file_get_contents($jsonFile), TRUE);
-			//t3lib_div::devlog('old JSON:','extension_builder',0,$extensionConfigurationJSON);
 			$extensionConfigurationJSON = $this->fixExtensionBuilderJSON($extensionConfigurationJSON, $prepareForModeler);
 			$extensionConfigurationJSON['properties']['originalExtensionKey'] = $extensionKey;
 			//t3lib_div::writeFile($jsonFile, json_encode($extensionConfigurationJSON));
@@ -143,6 +144,44 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 		} else {
 			return NULL;
 		}
+	}
+
+	/**
+	 * This is mainly copied from DataMapFactory
+	 *
+	 * @param string $className
+	 * @return array with configuration values
+	 */
+	public function getExtbaseClassConfiguration($className) {
+		$classConfiguration = array();
+		$frameworkConfiguration = $this->getConfiguration(Tx_Extbase_Configuration_ConfigurationManagerInterface::CONFIGURATION_TYPE_FRAMEWORK);
+		$classSettings = $frameworkConfiguration['persistence']['classes'][$className];
+		if ($classSettings !== NULL) {
+			if (isset($classSettings['subclasses']) && is_array($classSettings['subclasses'])) {
+				$classConfiguration['subclasses'] = $classSettings['subclasses'];
+			}
+			if (isset($classSettings['mapping']['recordType']) && strlen($classSettings['mapping']['recordType']) > 0) {
+				$classConfiguration['recordType'] = $classSettings['mapping']['recordType'];
+			}
+			if (isset($classSettings['mapping']['tableName']) && strlen($classSettings['mapping']['tableName']) > 0) {
+				$classConfiguration['tableName'] = $classSettings['mapping']['tableName'];
+			}
+			/**
+			$classHierachy = array_merge(array($className), class_parents($className));
+			foreach ($classHierachy as $currentClassName) {
+				if (in_array($currentClassName, array('Tx_Extbase_DomainObject_AbstractEntity', 'Tx_Extbase_DomainObject_AbstractValueObject'))) {
+					break;
+				}
+				$currentClassSettings = $frameworkConfiguration['persistence']['classes'][$currentClassName];
+				if ($currentClassSettings !== NULL) {
+					if (isset($currentClassSettings['mapping']['columns']) && is_array($currentClassSettings['mapping']['columns'])) {
+						$columnMapping = t3lib_div::array_merge_recursive_overrule($columnMapping, $currentClassSettings['mapping']['columns'], 0, FALSE); // FALSE means: do not include empty values form 2nd array
+					}
+				}
+			}
+			*/
+		}
+		return $classConfiguration;
 	}
 
 	/**
@@ -202,10 +241,15 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 	 * @return array the modified configuration
 	 */
 	public function fixExtensionBuilderJSON($extensionConfigurationJSON, $prepareForModeler) {
+		$extBuilderVersion = tx_em_Tools::renderVersion($extensionConfigurationJSON['log']['extension_builder_version']);
 		$extensionConfigurationJSON['modules'] = $this->mapOldRelationTypesToNewRelationTypes($extensionConfigurationJSON['modules']);
 		$extensionConfigurationJSON['modules'] = $this->generateUniqueIDs($extensionConfigurationJSON['modules']);
 		$extensionConfigurationJSON['modules'] = $this->resetOutboundedPositions($extensionConfigurationJSON['modules']);
 		$extensionConfigurationJSON['modules'] = $this->mapAdvancedMode($extensionConfigurationJSON['modules'], $prepareForModeler);
+		$extensionConfigurationJSON['modules'] = $this->mapOldActions($extensionConfigurationJSON['modules']);
+		if ($extBuilderVersion['version_int'] < 2000100) {
+			$extensionConfigurationJSON = $this->importExistingActionConfiguration($extensionConfigurationJSON);
+		}
 		$extensionConfigurationJSON = $this->reArrangeRelations($extensionConfigurationJSON);
 		return $extensionConfigurationJSON;
 	}
@@ -319,7 +363,7 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 	 * @return array modified json
 	 */
 	protected function mapAdvancedMode($jsonConfig, $prepareForModeler) {
-		$fieldsToMap = array('relationType', 'propertyIsExcludeField', 'propertyIsExcludeField', 'lazyLoading', 'relationDescription');
+		$fieldsToMap = array('relationType', 'propertyIsExcludeField', 'propertyIsExcludeField', 'lazyLoading', 'relationDescription','foreignRelationClass');
 		foreach ($jsonConfig as &$module) {
 			for ($i = 0; $i < count($module['value']['relationGroup']['relations']); $i++) {
 				if ($prepareForModeler) {
@@ -332,6 +376,7 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 						$module['value']['relationGroup']['relations'][$i]['advancedSettings']['propertyIsExcludeField'] = $module['value']['relationGroup']['relations'][$i]['propertyIsExcludeField'];
 						$module['value']['relationGroup']['relations'][$i]['advancedSettings']['lazyLoading'] = $module['value']['relationGroup']['relations'][$i]['lazyLoading'];
 						$module['value']['relationGroup']['relations'][$i]['advancedSettings']['relationDescription'] = $module['value']['relationGroup']['relations'][$i]['relationDescription'];
+						$module['value']['relationGroup']['relations'][$i]['advancedSettings']['foreignRelationClass'] = $module['value']['relationGroup']['relations'][$i]['foreignRelationClass'];
 					}
 				} else if (isset($module['value']['relationGroup']['relations'][$i]['advancedSettings'])) {
 					foreach ($fieldsToMap as $fieldToMap) {
@@ -432,6 +477,109 @@ class Tx_ExtensionBuilder_Configuration_ConfigurationManager extends Tx_Extbase_
 		}
 	}
 
+	/**
+	 * this method should adapt the changes in action configuration
+	 * 1. version: list with dropdowns
+	 * 2. version: checkboxes for default actions and list with textfields for custom actions
+	 * 3. version: prefix for default actions to enable sorting
+	 * @param $modules
+	 * @return mixed
+	 */
+	protected function mapOldActions($modules) {
+		$newActionNames = array('list' => '_default0_list', 'show' => '_default1_show', 'new_create' => '_default2_new_create', 'edit_update' => '_default3_edit_update', 'delete' => '_default4_delete');
+		foreach ($modules as &$module) {
+			if (isset($module['value']['actionGroup']['actions'])) {
+				foreach ($newActionNames as $defaultAction) {
+					$module['value']['actionGroup'][$defaultAction] = FALSE;
+				}
+				if (empty($module['value']['actionGroup']['actions'])) {
+					if ($module['value']['objectsettings']['aggregateRoot']) {
+						foreach ($newActionNames as $defaultAction) {
+							$module['value']['actionGroup'][$defaultAction] = TRUE;
+						}
+					}
+				} else {
+
+					foreach ($module['value']['actionGroup']['actions'] as $oldActionName) {
+						if ($oldActionName == 'create') {
+							$module['value']['actionGroup']['new_create'] = TRUE;
+						} else if ($oldActionName == 'update') {
+							$module['value']['actionGroup']['edit_update'] = TRUE;
+						} else {
+							$module['value']['actionGroup'][$oldActionName] = TRUE;
+						}
+					}
+				}
+				unset($module['value']['actionGroup']['actions']);
+			}
+			//foreach($module['value']['actionGroup'] as $actionName => $value) {
+			foreach($newActionNames as $oldActionKey => $newActionKey){
+				if(isset($module['value']['actionGroup'][$oldActionKey])) {
+					$module['value']['actionGroup'][$newActionKey] = $module['value']['actionGroup'][$oldActionKey];
+					unset($module['value']['actionGroup'][$oldActionKey]);
+				} else if(!isset($module['value']['actionGroup'][$newActionKey])){
+					$module['value']['actionGroup'][$newActionKey] = FALSE;
+				}
+			}
+		}
+		return $modules;
+	}
+
+	/**
+	 * Enable the import of actions configuration of installed extensions
+	 * by importing the settings from $TYPO3_CONF_VARS
+	 * @param array $extensionConfigurationJSON
+	 * @return array
+	 */
+	protected function importExistingActionConfiguration(array $extensionConfigurationJSON) {
+		if (isset($extensionConfigurationJSON['properties']['plugins'])) {
+			$extKey = $extensionConfigurationJSON['properties']['extensionKey'];
+			if (t3lib_extMgm::isLoaded($extKey)) {
+				foreach ($extensionConfigurationJSON['properties']['plugins'] as &$pluginJSON) {
+					if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][t3lib_div::underscoredToUpperCamelCase($extKey)]['plugins'][ucfirst($pluginJSON['key'])]['controllers'])) {
+						$controllerActionCombinationsConfig = "";
+						$nonCachableActionConfig = "";
+						$pluginJSON['actions'] = array();
+						foreach ($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][t3lib_div::underscoredToUpperCamelCase($extKey)]['plugins'][ucfirst($pluginJSON['key'])]['controllers'] as $controllerName => $controllerConfig) {
+							if (isset($controllerConfig['actions'])) {
+								$controllerActionCombinationsConfig .= $controllerName . '=>' . implode(',', $controllerConfig['actions']) . LF;
+							}
+							if (isset($controllerConfig['nonCacheableActions'])) {
+								$nonCachableActionConfig .= $controllerName . '=>' . implode(',', $controllerConfig['nonCacheableActions']) . LF;
+							}
+						}
+						if (!empty($controllerActionCombinationsConfig)) {
+							$pluginJSON['actions']['controllerActionCombinations'] = $controllerActionCombinationsConfig;
+						}
+						if (!empty($nonCachableActionConfig)) {
+							$pluginJSON['actions']['noncacheableActions'] = $nonCachableActionConfig;
+						}
+					}
+				}
+			}
+		}
+		return $extensionConfigurationJSON;
+	}
+
+	public function getParentClassForValueObject($extensionKey) {
+		$settings = self::getExtensionSettings($extensionKey);
+		if (isset($settings['classBuilder']['Model']['AbstractValueObject']['parentClass'])) {
+			$parentClass = $settings['classBuilder']['Model']['AbstractValueObject']['parentClass'];
+		} else {
+			$parentClass = 'Tx_Extbase_DomainObject_AbstractValueObject';
+		}
+		return $parentClass;
+	}
+
+	public function getParentClassForEntityObject($extensionKey) {
+		$settings = self::getExtensionSettings($extensionKey);
+		if (isset($settings['classBuilder']['Model']['AbstractEntity']['parentClass'])) {
+			$parentClass = $settings['classBuilder']['Model']['AbstractEntity']['parentClass'];
+		} else {
+			$parentClass = 'Tx_Extbase_DomainObject_AbstractEntity';
+		}
+		return $parentClass;
+	}
 }
 
 ?>	

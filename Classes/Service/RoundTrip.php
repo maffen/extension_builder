@@ -71,6 +71,15 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 	 */
 	protected $classParser;
 
+	/**
+	 * @var Tx_ExtensionBuilder_Service_ClassBuilder
+	 */
+	protected $classBuilder;
+
+	/**
+	 * @var Tx_ExtensionBuilder_Configuration_ConfigurationManager
+	 */
+	protected $configurationManager;
 
 	/**
 	 * was the extension renamed?
@@ -85,6 +94,14 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 	 */
 	public function injectClassParser(Tx_ExtensionBuilder_Utility_ClassParser $classParser) {
 		$this->classParser = $classParser;
+	}
+
+	/**
+	 * @param Tx_ExtensionBuilder_Service_ClassBuilder $classBuilder
+	 * @return void
+	 */
+	public function injectClassBuilder(Tx_ExtensionBuilder_Service_ClassBuilder $classBuilder) {
+		$this->classBuilder = $classBuilder;
 	}
 
 	/**
@@ -111,7 +128,7 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 		if (!$this->classParser instanceof Tx_ExtensionBuilder_Utility_ClassParser) {
 			$this->injectClassParser(t3lib_div::makeInstance('Tx_ExtensionBuilder_Utility_ClassParser'));
 		}
-		$this->settings = Tx_ExtensionBuilder_Configuration_ConfigurationManager::getExtensionBuilderSettings();
+		$this->settings = $this->configurationManager->getExtensionBuilderSettings();
 		// defaults
 		$this->previousExtensionDirectory = $this->extensionDirectory;
 		$this->previousExtensionKey = $this->extension->getExtensionKey();
@@ -143,7 +160,7 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 			}
 
 			// now we store all renamed domainObjects in an array to enable detection of renaming in
-			// relationProperties (property->getForeignClass)
+			// relationProperties (property->getForeignModel)
 			// we also build an array with the new unique identifiers to detect deleting of domainObjects
 			$currentDomainsObjects = array();
 			foreach ($this->extension->getDomainObjects() as $domainObject) {
@@ -210,6 +227,32 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 				if ((empty($newActions) && !$currentDomainObject->isAggregateRoot()) && (!empty($oldActions) || $oldDomainObject->isAggregateRoot())) {
 					// remove the controller
 					$this->cleanUp(Tx_ExtensionBuilder_Service_CodeGenerator::getFolderForClassFile($extensionDir, 'Controller'), $oldDomainObject->getName() . 'Controller.php');
+				}
+
+				// the parent class settings configuration
+				$parentClass = $currentDomainObject->getParentClass();
+				$oldParentClass = $oldDomainObject->getParentClass();
+				if (!empty($parentClass)) {
+					if ($oldParentClass != $parentClass) {
+						// the parent class was just new added
+						$this->classObject->setParentClass($parentClass);
+					}
+				} else if (!empty($oldParentClass)) {
+					// the old object had a parent class setting, but it's removed now
+					if ($currentDomainObject->isEntity()) {
+						$parentClass = $this->configurationManager->getParentClassForEntityObject($this->extension->getExtensionKey());
+					} else {
+						$parentClass = $this->configurationManager->getParentClassForValueObject($this->extension->getExtensionKey());
+					}
+					$this->classObject->setParentClass($parentClass);
+				}
+
+				if($currentDomainObject->isEntity() && !$oldDomainObject->isEntity()) {
+					// the object type was changed in the modeler
+					$this->classObject->setParentClass($this->configurationManager->getParentClassForEntityObject($this->extension->getExtensionKey()));
+				} elseif (!$currentDomainObject->isEntity() && $oldDomainObject->isEntity()) {
+					// the object type was changed in the modeler
+					$this->classObject->setParentClass($this->configurationManager->getParentClassForValueObject($this->extension->getExtensionKey()));
 				}
 				return $this->classObject;
 			}
@@ -442,7 +485,6 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 		// compare all old properties with new ones
 		foreach ($oldDomainObject->getProperties() as $oldProperty) {
 			if (isset($newProperties[$oldProperty->getUniqueIdentifier()])) {
-
 				$newProperty = $newProperties[$oldProperty->getUniqueIdentifier()];
 
 				// relation type changed
@@ -463,6 +505,7 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 				}
 				else {
 					$this->updateProperty($oldProperty, $newProperty);
+					$newDomainObject->getPropertyByName($newProperty->getName())->setNew(FALSE);
 				}
 			}
 			else {
@@ -529,8 +572,8 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 		if ($this->extensionRenamed) {
 			return TRUE;
 		}
-		if ($newProperty->getName() != $this->updateExtensionKey($oldProperty->getName())) {
-			t3lib_div::devlog('property renamed:' . $this->updateExtensionKey($oldProperty->getName()) . ' ' . $newProperty->getName(), 'extension_builder', 0);
+		if ($newProperty->getName() != $oldProperty->getName()) {
+			t3lib_div::devlog('property renamed:' . $oldProperty->getName() . ' ' . $newProperty->getName(), 'extension_builder', 0);
 			return TRUE;
 		}
 		if ($newProperty->getTypeForComment() != $this->updateExtensionKey($oldProperty->getTypeForComment())) {
@@ -539,8 +582,8 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 		}
 		if ($newProperty->isRelation()) {
 			// if only the related domain object was renamed
-			if ($this->getForeignClass($newProperty)->getClassName() != $this->updateExtensionKey($oldProperty->getForeignClass()->getClassName())) {
-				t3lib_div::devlog('related domainObject was renamed:' . $this->updateExtensionKey($oldProperty->getForeignClass()->getClassName()) . ' ->' . $this->getForeignClass($newProperty)->getClassName(), 'extension_builder');
+			if ($this->getForeignClassName($newProperty) != $this->updateExtensionKey($oldProperty->getForeignClassName())) {
+				t3lib_div::devlog('related domainObject was renamed:' . $this->updateExtensionKey($oldProperty->getForeignClassName()) . ' ->' . $this->getForeignClassName($newProperty), 'extension_builder');
 				return TRUE;
 			}
 		}
@@ -578,8 +621,8 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 		}
 		if ($newProperty->getTypeForComment() != $this->updateExtensionKey($oldProperty->getTypeForComment())) {
 			if ($oldProperty->isBoolean() && !$newProperty->isBoolean()) {
-				$this->classObject->removeMethod(Tx_ExtensionBuilder_Service_ClassBuilder::getMethodName($oldProperty, 'is'));
-				t3lib_div::devlog('Method removed:' . Tx_ExtensionBuilder_Service_ClassBuilder::getMethodName($oldProperty, 'is'),
+				$this->classObject->removeMethod($this->classBuilder->getMethodName($oldProperty, 'is'));
+				t3lib_div::devlog('Method removed:' . $this->classBuilder->getMethodName($oldProperty, 'is'),
 								  'extension_builder', 1, $this->classObject->getMethods());
 			}
 		}
@@ -596,7 +639,7 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 	 */
 	protected function updateMethod($oldProperty, $newProperty, $methodType) {
 
-		$oldMethodName = Tx_ExtensionBuilder_Service_ClassBuilder::getMethodName($oldProperty, $methodType);
+		$oldMethodName = $this->classBuilder->getMethodName($oldProperty, $methodType);
 		// the method to be merged
 		$mergedMethod = $this->classObject->getMethod($oldMethodName);
 
@@ -604,7 +647,7 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 			// no previous version of the method exists
 			return;
 		}
-		$newMethodName = Tx_ExtensionBuilder_Service_ClassBuilder::getMethodName($newProperty, $methodType);
+		$newMethodName = $this->classBuilder->getMethodName($newProperty, $methodType);
 		t3lib_div::devlog('updateMethod:' . $oldMethodName . '=>' . $newMethodName, 'extension_builder');
 
 		if ($oldProperty->getName() != $newProperty->getName()) {
@@ -625,33 +668,33 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 			$parameterTags = $mergedMethod->getTagsValues('param');
 			foreach ($methodParameters as $methodParameter) {
 				$oldParameterName = $methodParameter->getName();
-				if ($oldParameterName == Tx_ExtensionBuilder_Service_ClassBuilder::getParameterName($oldProperty, $methodType)) {
-					$newParameterName = Tx_ExtensionBuilder_Service_ClassBuilder::getParameterName($newProperty, $methodType);
+				if ($oldParameterName == $this->classBuilder->getParameterName($oldProperty, $methodType)) {
+					$newParameterName = $this->classBuilder->getParameterName($newProperty, $methodType);
 					$methodParameter->setName($newParameterName);
 					$newMethodBody = $this->replacePropertyNameInMethodBody($oldParameterName, $newParameterName, $mergedMethod->getBody());
 					$mergedMethod->setBody($newMethodBody);
 				}
 				$typeHint = $methodParameter->getTypeHint();
 				if ($typeHint) {
-					if ($oldProperty->isRelation() && $typeHint == $oldProperty->getForeignClass()->getClassName()) {
-						$methodParameter->setTypeHint($this->updateExtensionKey($this->getForeignClass($newProperty)->getClassName()));
+					if ($oldProperty->isRelation() && $typeHint == $oldProperty->getForeignClassName()) {
+						$methodParameter->setTypeHint($this->updateExtensionKey($this->getForeignClassName($newProperty)));
 					}
 				}
-				$parameterTags[$methodParameter->getPosition()] =  Tx_ExtensionBuilder_Service_ClassBuilder::getParamTag($newProperty, $methodType);
+				$parameterTags[$methodParameter->getPosition()] = $this->classBuilder->getParamTag($newProperty, $methodType);
 				$mergedMethod->replaceParameter($methodParameter);
 			}
-			$mergedMethod->setTag('param',$parameterTags);
+			$mergedMethod->setTag('param', $parameterTags);
 		}
 
 		$returnTagValue = trim($mergedMethod->getTagsValues('return'));
-		if($returnTagValue != 'void'){
+		if ($returnTagValue != 'void') {
 			$mergedMethod->setTag('return', $newProperty->getTypeForComment() . ' ' . $newProperty->getName());
 		}
 
 		// replace property names in description
 		$mergedMethod->setDescription(str_replace($oldProperty->getName(), $newProperty->getName(), $mergedMethod->getDescription()));
-		if (method_exists($oldProperty, 'getForeignClass') && method_exists($newProperty, 'getForeignClass')) {
-			$mergedMethod->setDescription(str_replace($oldProperty->getForeignClass()->getName(), $newProperty->getForeignClass()->getName(), $mergedMethod->getDescription()));
+		if (method_exists($oldProperty, 'getForeignModel') && method_exists($newProperty, 'getForeignModel')) {
+			$mergedMethod->setDescription(str_replace($oldProperty->getForeignClassName(), $newProperty->getForeignClassName(), $mergedMethod->getDescription()));
 		}
 		$this->classObject->removeMethod($oldMethodName);
 		$this->classObject->addMethod($mergedMethod);
@@ -692,12 +735,12 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 	 * @param Tx_ExtensionBuilder_Domain_Model_DomainObject_Relation_AbstractRelation $relation
 	 * @return string className of foreign class
 	 */
-	public function getForeignClass($relation) {
-		if (isset($this->renamedDomainObjects[$relation->getForeignClass()->getUniqueIdentifier()])) {
-			$renamedObject = $this->renamedDomainObjects[$relation->getForeignClass()->getUniqueIdentifier()];
-			return $renamedObject;
+	public function getForeignClassName($relation) {
+		if ($relation->getForeignModel() && isset($this->renamedDomainObjects[$relation->getForeignModel()->getUniqueIdentifier()])) {
+			$renamedObject = $this->renamedDomainObjects[$relation->getForeignModel()->getUniqueIdentifier()];
+			return $renamedObject->getClassName;
 		}
-		else return $relation->getForeignClass();
+		else return $relation->getForeignClassName();
 	}
 
 	/**
@@ -779,7 +822,6 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 		);
 
 		$settings = $extension->getSettings();
-		//t3lib_div::devlog('Overwrite settings for:'.$path,'extension_builder',0,$settings);
 		if (!is_array($settings)) {
 			throw new Exception('overWrite settings could not be parsed');
 		}
@@ -919,51 +961,6 @@ class Tx_ExtensionBuilder_Service_RoundTrip implements t3lib_singleton {
 			}
 		}
 		closedir($dir);
-	}
-
-	/**
-	 * TODO: Adapt to new xlf format!
-	 * @static
-	 * @param string $locallangFile
-	 * @param string $newXmlString
-	 * @return string merged label in XML format
-	 */
-	static public function mergeLocallangXml($locallangFile, $newXmlString) {
-		$existingLabelArr = t3lib_div::xml2array(t3lib_div::getUrl($locallangFile));
-		$newLabelArr = t3lib_div::xml2array($newXmlString);
-		if (is_array($existingLabelArr)) {
-			$mergedLabelArr = t3lib_div::array_merge_recursive_overrule($newLabelArr, $existingLabelArr);
-		} else {
-			$mergedLabelArr = $newLabelArr;
-		}
-		$xml = self::createXML($mergedLabelArr);
-		return $xml;
-	}
-
-	/**
-	 *
-	 * @param $outputArray
-	 * @return string xml
-	 */
-	function createXML($outputArray) {
-
-		// Options:
-		$options = array(
-			#'useIndexTagForAssoc'=>'key',
-			'parentTagMap' => array(
-				'data' => 'languageKey',
-				'orig_hash' => 'languageKey',
-				'orig_text' => 'languageKey',
-				'labelContext' => 'label',
-				'languageKey' => 'label'
-			)
-		);
-
-		// Creating XML file from $outputArray:
-		$XML = '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>' . chr(10);
-		$XML .= t3lib_div::array2xml($outputArray, '', 0, 'T3locallang', 0, $options);
-
-		return $XML;
 	}
 
 }

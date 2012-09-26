@@ -64,13 +64,25 @@ class Tx_ExtensionBuilder_Utility_ClassParser implements t3lib_singleton {
 	 * The regular expression to detect a method in a line
 	 * @var string regular expression
 	 */
-	public $methodRegex = '/\s*function\s*(\w*)/';
+	public $methodRegex = "/^
+		\s*															# Some possible whitespace
+		(
+			((?P<visibility>public|protected|private)\s+)			# Visibility declaration
+			|
+			((?P<static>static)\s+)									# Static declaration
+		){0,2}														# Visiblity and Static can both occur, in any order
+		\s*															# Some possible whitespace
+		function													# Literal string 'function'
+		\s+															# One or multiple whitespaces
+		(?P<methodName>\w*)											# The method name
+		\s*\(														# Some possible whitespace followed by a (
+	/x";
 
 	/**
 	 * The regular expression to detect a property (or multiple) in a line
 	 * TODO: the regex fails in at least 2 cases:
-	 * 		1. if a value contains a string with a semicolon AND an escaped quote; "test;\""
-	 * 		2. if an array contains a string with a semicolon in it: array(foo => 'bar;');
+	 *		 1. if a value contains a string with a semicolon AND an escaped quote; "test;\""
+	 *		 2. if an array contains a string with a semicolon in it: array(foo => 'bar;');
 	 * @var string regular expression
 	 */
 	public $propertyRegex = '/\s*\\$(?<name>\w*)\s*(\=(?<value>\s*([^;\"\']|\"[^\"]*\"|\'[^\']*\'|[^;]*)))?;/';
@@ -174,6 +186,15 @@ class Tx_ExtensionBuilder_Utility_ClassParser implements t3lib_singleton {
 
 			$this->classObject->$setterMethod($this->classReflection->$getterMethod());
 		}
+
+		$interfaceNames = $this->classReflection->getInterfaceNames();
+		if (count($interfaceNames) > 0) {
+			if ($this->classReflection->getParentClass() && count($this->classReflection->getParentClass()->getInterfaceNames()) > 0) {
+				$interfaceNames = array_diff($interfaceNames, $this->classReflection->getParentClass()->getInterfaceNames());
+
+			}
+			$this->classObject->setInterfaceNames($interfaceNames);
+		}
 		// reset class properties
 		$this->lines = array();
 		$this->lastMatchedLineNumber = -1;
@@ -228,7 +249,7 @@ class Tx_ExtensionBuilder_Utility_ClassParser implements t3lib_singleton {
 					} else {
 
 						// a semicolon was found (but not in single or double quotes!)
-						if ($this->inMultiLineProperty && preg_match('/(;)(?=(?:[^"\']|["|\'][^"\']*")*$)/',$trimmedLine)) {
+						if ($this->inMultiLineProperty && preg_match('/(;)(?=(?:[^"\']|["|\'][^"\']*")*$)/', $trimmedLine)) {
 							// the end line of a multi line property
 							$this->onMultiLinePropertyEnd();
 						}
@@ -389,7 +410,7 @@ class Tx_ExtensionBuilder_Utility_ClassParser implements t3lib_singleton {
 	 */
 	protected function onMethodFound($methodMatches) {
 		$this->inMethodBody = TRUE;
-		$methodName = $methodMatches[1][0];
+		$methodName = $methodMatches['methodName'][0];
 
 		try {
 			// the method has to exist in the classReflection
@@ -493,7 +514,7 @@ class Tx_ExtensionBuilder_Utility_ClassParser implements t3lib_singleton {
 
 					// get the default value from regex matches
 					if (!empty($propertyValue)) {
-						if(strlen($classProperty->getVarType()) < 1){
+						if (strlen($classProperty->getVarType()) < 1) {
 							// try to detect the varType from default value
 							if (strpos($propertyValue, 'array') > -1) {
 								$varType = 'array';

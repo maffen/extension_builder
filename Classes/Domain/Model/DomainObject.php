@@ -55,6 +55,12 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	protected $aggregateRoot;
 
 	/**
+	 * If TRUE, the element is sortable in the TYPO3 backend
+	 * @var boolean
+	 */
+	protected $sorting;
+
+	/**
 	 * If TRUE, this is an entity. If FALSE, it is a ValueObject
 	 * @var boolean
 	 */
@@ -87,6 +93,22 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	protected $needsUploadFolder = FALSE;
 
 	/**
+	 * @var string
+	 */
+	protected $mapToTable = '';
+
+	/**
+	 * @var string
+	 */
+	protected $parentClass = '';
+
+	/**
+	 * Domain objects that extend the current object (as declared in this extension)
+	 * @var array<Tx_ExtensionBuilder_Domain_Model_DomainObject>
+	 */
+	protected $childObjects = array();
+
+	/**
 	 * Set name
 	 * @return string
 	 */
@@ -103,15 +125,19 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	}
 
 	public function getClassName() {
-		return 'Tx_' . Tx_Extbase_Utility_Extension::convertLowerUnderscoreToUpperCamelCase($this->extension->getExtensionKey()) . '_Domain_Model_' . $this->getName();
+		return 'Tx_' . t3lib_div::underscoredToUpperCamelCase($this->extension->getExtensionKey()) . '_Domain_Model_' . $this->getName();
 	}
 
 	public function getControllerName() {
-		return 'Tx_' . Tx_Extbase_Utility_Extension::convertLowerUnderscoreToUpperCamelCase($this->extension->getExtensionKey()) . '_Controller_' . $this->getName() . 'Controller';
+		return 'Tx_' . t3lib_div::underscoredToUpperCamelCase($this->extension->getExtensionKey()) . '_Controller_' . $this->getName() . 'Controller';
 	}
 
 	public function getDatabaseTableName() {
-		return 'tx_' . strtolower(Tx_Extbase_Utility_Extension::convertLowerUnderscoreToUpperCamelCase($this->extension->getExtensionKey())) . '_domain_model_' . strtolower($this->getName());
+		if (!empty($this->mapToTable)) {
+			return $this->mapToTable;
+		} else {
+			return 'tx_' . strtolower(t3lib_div::underscoredToUpperCamelCase($this->extension->getExtensionKey())) . '_domain_model_' . strtolower($this->getName());
+		}
 	}
 
 	/**
@@ -206,35 +232,10 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	 */
 	public function addProperty(Tx_ExtensionBuilder_Domain_Model_DomainObject_AbstractProperty $property) {
 		$property->setDomainObject($this);
-		if (is_subclass_of($property, 'Tx_ExtensionBuilder_Domain_Model_DomainObject_Relation_AnyToManyRelation')) {
-			// here we do a check if there is already a relation to the same foreign class
-			if (!$this->isUniqueRelationToForeignClass($property->getForeignClass())) {
-				$property->setUseExtendedRelationTableName(TRUE);
-			}
-		}
 		if ($property->getNeedsUploadFolder()) {
 			$this->needsUploadFolder = TRUE;
 		}
 		$this->properties[] = $property;
-	}
-
-	/**
-	 * Check all relations of this object and returns TRUE
-	 * if there is no other relation to the same foreign class
-	 *
-	 * @param string $foreignClass
-	 *
-	 * @return boolean
-	 */
-	protected function isUniqueRelationToForeignClass($foreignClass) {
-		$anyToManyRelationProperties = $this->getAnyToManyRelationProperties();
-		$foreignClasses = array();
-		foreach ($anyToManyRelationProperties as $anyToManyRelationProperty) {
-			if ($anyToManyRelationProperty->getForeignClass() == $foreignClass) {
-				return FALSE;
-			}
-		}
-		return TRUE;
 	}
 
 	/**
@@ -357,7 +358,7 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	 */
 	public function getDomainRepositoryClassName() {
 		if (!$this->aggregateRoot) return '';
-		return 'Tx_' . Tx_Extbase_Utility_Extension::convertLowerUnderscoreToUpperCamelCase($this->extension->getExtensionKey()) . '_Domain_Repository_' . $this->getName() . 'Repository';
+		return 'Tx_' . t3lib_div::underscoredToUpperCamelCase($this->extension->getExtensionKey()) . '_Domain_Repository_' . $this->getName() . 'Repository';
 	}
 
 	/**
@@ -406,7 +407,7 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	/**
 	 * @return array
 	 */
-	public function getPropertiesWithMappingStatements() {
+	public function hasPropertiesThatNeedMappingStatements() {
 		$propertiesWithMappingStatements = array();
 		foreach ($this->properties as $property) {
 			if ($property->getMappingStatement()) {
@@ -424,6 +425,105 @@ class Tx_ExtensionBuilder_Domain_Model_DomainObject {
 	public function getNeedsUploadFolder() {
 		return $this->needsUploadFolder;
 	}
+
+
+	/**
+	 * @return string
+	 */
+	public function getMapToTable() {
+		return $this->mapToTable;
+	}
+
+	/**
+	 * @param string $mapToTable
+	 */
+	public function setMapToTable($mapToTable) {
+		$this->mapToTable = $mapToTable;
+	}
+
+	/**
+	 * is this domain object mapped to an existing table?
+	 * @return bool
+	 */
+	public function getNeedsMappingStatement() {
+		if (!empty($this->mapToTable)) {
+			return TRUE;
+		} else if ($this->hasPropertiesThatNeedMappingStatements()) {
+			return TRUE;
+		} else {
+			return FALSE;
+		}
+	}
+
+	/**
+	 * is this domain object mapped to a table?
+	 * @return bool
+	 */
+	public function isMappedToExistingTable() {
+		if (!empty($this->mapToTable)) {
+			return TRUE;
+		} else {
+			return FALSE;
+		}
+	}
+
+	/**
+	 * @param string $parentClass
+	 */
+	public function setParentClass($parentClass) {
+		$this->parentClass = $parentClass;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getParentClass() {
+		return $this->parentClass;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getRecordType() {
+		return str_replace('Domain_Model_', '', $this->getClassName());
+	}
+
+	public function isSubClass() {
+		if (empty($this->parentClass)) {
+			return FALSE;
+		} else {
+			return TRUE;
+		}
+	}
+
+	/**
+	 * @param Tx_ExtensionBuilder_Domain_Model_DomainObject $childObject
+	 */
+	public function addChildObject(Tx_ExtensionBuilder_Domain_Model_DomainObject $childObject) {
+		$this->childObjects[] = $childObject;
+	}
+
+	/**
+	 * @return array Tx_ExtensionBuilder_Domain_Model_DomainObject
+	 */
+	public function getChildObjects() {
+		return $this->childObjects;
+	}
+
+	/**
+	 * @param boolean $sorting
+	 */
+	public function setSorting($sorting) {
+		$this->sorting = $sorting;
+	}
+
+	/**
+	 * @return boolean
+	 */
+	public function getSorting() {
+		return $this->sorting;
+	}
+
 }
 
 ?>

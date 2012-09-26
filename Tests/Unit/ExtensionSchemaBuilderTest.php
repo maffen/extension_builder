@@ -32,11 +32,15 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 
 	public function setUp() {
 		//parent::setUp();
-		$this->extension = $this->getMock('Tx_ExtensionBuilder_Domain_Model_Extension',array('getOverWriteSettings'));
+		$this->extension = $this->getMock('Tx_ExtensionBuilder_Domain_Model_Extension', array('getOverWriteSettings'));
 		$this->extensionSchemaBuilder = $this->getMock($this->buildAccessibleProxy('Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder'), array('dummy'));
-		$this->extensionSchemaBuilder->injectConfigurationManager(new Tx_ExtensionBuilder_Configuration_ConfigurationManager()); 
+		$this->extensionSchemaBuilder->injectConfigurationManager(new Tx_ExtensionBuilder_Configuration_ConfigurationManager());
+		$objectSchemaBuilder = $this->getMock($this->buildAccessibleProxy('Tx_ExtensionBuilder_Service_ObjectSchemaBuilder'), array('dummy'));
+		$objectSchemaBuilder->injectConfigurationManager(new Tx_ExtensionBuilder_Configuration_ConfigurationManager());
+		$this->extensionSchemaBuilder->injectObjectSchemaBuilder($objectSchemaBuilder);
 		$this->extensionKey = 'dummy';
 	}
+
 	/**
 	 * @test
 	 */
@@ -69,7 +73,7 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 		$extension->setExtensionDir('');
 
 		$actual = $this->extensionSchemaBuilder->build($input);
-		$this->assertEquals($extension,$actual, 'Extension properties were not extracted.');
+		$this->assertEquals($extension, $actual, 'Extension properties were not extracted.');
 	}
 
 	/**
@@ -98,16 +102,16 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 				),
 				'persons' => array(
 					array(
-						'company'=>'company0',
-						'email'=>'email0',
-						'name'=>'name0',
-						'role'=>'role0'
+						'company' => 'company0',
+						'email' => 'email0',
+						'name' => 'name0',
+						'role' => 'role0'
 					),
 					array(
-						'company'=>'company1',
-						'email'=>'email1',
-						'name'=>'name1',
-						'role'=>'role1'
+						'company' => 'company1',
+						'email' => 'email1',
+						'name' => 'name1',
+						'role' => 'role1'
 					),
 				),
 				'state' => 'beta'
@@ -121,66 +125,13 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 	/**
 	 * @test
 	 */
-	public function conversionExtractsSingleDomainObjectMetadata() {
-		$name = 'MyDomainObject';
-		$description = 'My long domain object description';
-
-		$input = array(
-			'name' => $name,
-			'objectsettings' => array(
-				'description' => $description,
-				'aggregateRoot' => TRUE,
-				'type' => 'Entity'
-			),
-			'propertyGroup' => array(
-				'properties' => array(
-					0 => array(
-						'propertyName' => 'name',
-						'propertyType' => 'String',
-						'propertyIsRequired' => 'true'
-					),
-					1 => array(
-						'propertyName' => 'type',
-						'propertyType' => 'Integer'
-					)
-				)
-			),
-			'relationGroup' => array()
-		);
-
-		$expected = new Tx_ExtensionBuilder_Domain_Model_DomainObject();
-		$expected->setName($name);
-		$expected->setDescription($description);
-		$expected->setEntity(TRUE);
-		$expected->setAggregateRoot(TRUE);
-
-		$property0 = new Tx_ExtensionBuilder_Domain_Model_DomainObject_StringProperty('name');
-		$property0->setRequired(TRUE);
-		$property1 = new Tx_ExtensionBuilder_Domain_Model_DomainObject_IntegerProperty('type');
-		$expected->addProperty($property0);
-		$expected->addProperty($property1);
-
-		$extension = new Tx_ExtensionBuilder_Domain_Model_Extension();
-		$extension->setExtensionKey('my_ext_key');
-		$this->extensionSchemaBuilder->extension = $extension;
-
-		$actual = $this->extensionSchemaBuilder->_call('buildDomainObject', $input);
-		//$this->codeGenerator = $this->getMock($this->buildAccessibleProxy('Tx_ExtensionBuilder_Service_CodeGenerator'), array('dummy'));
-		//$this->codeGenerator->build($this->extensionSchemaBuilder->extension);
-		$domainObjects = $this->extensionSchemaBuilder->extension->getDomainObjects();
-
-		//$this->assertEquals($actual, $expected, 'Domain Object not built correctly.');
-	}
-	/**
-	 * @test
-	 */
 	public function conversionExtractsWholeExtensionMetadataWithRelations() {
 		$input = array(
 			'modules' => array(
 				0 => array(
 					// config
 					// name
-					'value' =>  array(
+					'value' => array(
 						'name' => 'Blog',
 						'objectsettings' => array(
 							'description' => 'A blog object',
@@ -213,7 +164,7 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 				1 => array(
 					// config
 					// name
-					'value' =>  array(
+					'value' => array(
 						'name' => 'Post',
 						'objectsettings' => array(
 							'description' => 'A blog post',
@@ -238,7 +189,7 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 				2 => array(
 					// config
 					// name
-					'value' =>  array(
+					'value' => array(
 						'name' => 'Comment',
 						'objectsettings' => array(
 							'description' => '',
@@ -321,12 +272,12 @@ class Tx_ExtensionBuilder_ExtensionSchemaBuilderTest extends Tx_ExtensionBuilder
 		$extension->addDomainObject($comment);
 
 		$relation = new Tx_ExtensionBuilder_Domain_Model_DomainObject_Relation_ZeroToManyRelation('posts');
-		$relation->setForeignClass($post);
+		$relation->setForeignModel($post);
 		$relation->setExcludeField(1);
 		$blog->addProperty($relation);
 
 		$relation = new Tx_ExtensionBuilder_Domain_Model_DomainObject_Relation_ZeroToManyRelation('comments');
-		$relation->setForeignClass($comment);
+		$relation->setForeignModel($comment);
 		$relation->setExcludeField(1);
 		$post->addProperty($relation);
 		$actualExtension = $this->extensionSchemaBuilder->build($input);

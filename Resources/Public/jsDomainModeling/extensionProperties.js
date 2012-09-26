@@ -40,9 +40,9 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 		inputParams: {
 			collapsible: true,
 			collapsed: true,
-			legend: TYPO3.settings.extensionBuilder._LOCAL_LANG.more,
+			className: 'bottomBorder',
+			legend: TYPO3.settings.extensionBuilder._LOCAL_LANG.moreOptions,
 			name: "emConf",
-			description: 'Test',
 			fields: [
 					{
 						type: "select",
@@ -50,7 +50,7 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 							label: TYPO3.settings.extensionBuilder._LOCAL_LANG.category,
 							name: "category",
 							description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_category,
-							selectValues: [ "plugin", "module", "misc", "backend", "frontend", "services","templates", "examples", "doc"],
+							selectValues: [ "plugin", "module", "misc", "be", "fe", "services","templates", "example", "doc"],
 							selectOptions: [
 								TYPO3.settings.extensionBuilder._LOCAL_LANG.plugins,
 								TYPO3.settings.extensionBuilder._LOCAL_LANG.backendModules,
@@ -112,7 +112,42 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 							name: "shy",
 							label: TYPO3.settings.extensionBuilder._LOCAL_LANG.shy,
 							description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_shy,
+							value: 0,
+							postText: TYPO3.settings.extensionBuilder._LOCAL_LANG.extension_api_link
+						}
+					},
+					{
+						type: "boolean",
+						inputParams: {
+							name: "disableVersioning",
+							label: TYPO3.settings.extensionBuilder._LOCAL_LANG.disableVersioning,
+							description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_disableVersioning,
 							value: 0
+						}
+					},
+                    {
+                        type: "select",
+                        inputParams: {
+                            name: "targetVersion",
+                            label: TYPO3.settings.extensionBuilder._LOCAL_LANG.target_version,
+                            description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_target_version,
+                            selectOptions: [
+                                'TYPO3 v 4.5',
+                                'TYPO3 v 4.6',
+                                'TYPO3 v 4.7'
+                            ],
+                            selectValues: ["4.5","4.6","4.7"]
+                        }
+                    },
+					{
+						type: "text",
+						inputParams: {
+							label: TYPO3.settings.extensionBuilder._LOCAL_LANG.dependsOn,
+							name: "dependsOn",
+							description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_dependsOn,
+							cols:20,
+							rows:6,
+							value : "extbase => 1.3\nfluid => 1.3\ntypo3 => 4.5\n"
 						}
 					}
 			]
@@ -124,6 +159,7 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 			label: TYPO3.settings.extensionBuilder._LOCAL_LANG.persons,
 			name: "persons",
 			sortable: true,
+			className: 'bottomBorder',
 			elementType: {
 				type: "group",
 				inputParams: {
@@ -174,6 +210,7 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 			label: TYPO3.settings.extensionBuilder._LOCAL_LANG.plugins,
 			description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_plugins,
 			sortable: true,
+			className: 'bottomBorder',
 			elementType: {
 				type: "group",
 				inputParams: {
@@ -195,15 +232,56 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 								noSpaces: true,
 								description: TYPO3.settings.extensionBuilder._LOCAL_LANG.uniqueInThisModel
 							}
-//						},
-//						{
-//							type: "select",
-//							inputParams: {
-//								name: "type",
-//								label: TYPO3.settings.extensionBuilder._LOCAL_LANG.type,
-//								selectValues: ["list_type", "CType"],
-//								selectOptions: ["Frontend plugin", "Content type"],
-//							}
+						},
+						{
+							type: 'group',
+							inputParams: {
+								collapsible: true,
+								collapsed: true,
+								legend: TYPO3.settings.extensionBuilder._LOCAL_LANG.advancedOptions,
+								name: "actions",
+								className:"wideTextfields",
+								fields: [
+									{
+										type: "text",
+										inputParams: {
+											name: "controllerActionCombinations",
+											label: TYPO3.settings.extensionBuilder._LOCAL_LANG.controller_action_combinations,
+											description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_controller_action_combinations,
+											cols: 38,
+											rows: 3
+										}
+									},
+									{
+										type: "text",
+										inputParams: {
+											name: "noncacheableActions",
+											label: TYPO3.settings.extensionBuilder._LOCAL_LANG.noncacheable_actions,
+											description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_noncacheable_actions,
+											cols: 38,
+											rows: 3
+										}
+									},
+									{
+										type: "text",
+										inputParams: {
+											name: "switchableActions",
+											label: TYPO3.settings.extensionBuilder._LOCAL_LANG.switchableActions,
+											description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_switchableActions,
+											cols: 38,
+											rows: 3
+										}
+									}
+			//						{
+			//							type: "select",
+			//							inputParams: {
+			//								name: "type",
+			//								label: TYPO3.settings.extensionBuilder._LOCAL_LANG.type,
+			//								selectValues: ["list_type", "CType"],
+			//								selectOptions: ["Frontend plugin", "Content type"],
+			//							}
+								]
+							}
 						}
 					]
 				}
@@ -215,9 +293,11 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 		inputParams: {
 			label: TYPO3.settings.extensionBuilder._LOCAL_LANG.backendModules,
 			name: "backendModules",
+			className: 'bottomBorder',
 			sortable: true,
 			elementType: {
 				type: "group",
+				className: 'smallBottomBorder',
 				inputParams: {
 					name: "properties",
 					fields: [
@@ -257,6 +337,28 @@ extbaseModeling_wiringEditorLanguage.propertiesFields =
 								name: "mainModule",
 								required: true,
 								selectValues: ["web", "user","tools","help"]
+							}
+						},
+						{
+							type: 'group',
+							inputParams: {
+								collapsible: true,
+								collapsed: true,
+								legend: TYPO3.settings.extensionBuilder._LOCAL_LANG.advancedOptions,
+								name: "actions",
+								className:"wideTextfields",
+								fields: [
+									{
+										type: "text",
+										inputParams: {
+											name: "controllerActionCombinations",
+											label: TYPO3.settings.extensionBuilder._LOCAL_LANG.controller_action_combinations,
+											description: TYPO3.settings.extensionBuilder._LOCAL_LANG.descr_controller_action_combinations,
+											cols: 38,
+											rows: 3
+										}
+									}
+								]
 							}
 						}
 					]

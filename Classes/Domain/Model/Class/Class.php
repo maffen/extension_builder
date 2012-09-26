@@ -60,7 +60,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 
 	/**
 	 * interfaceNames
-	 * @var string
+	 * @var array
 	 */
 	protected $interfaceNames;
 
@@ -102,9 +102,14 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	protected $parentClass = NULL;
 
 	/**
+	 * @var Tx_ExtensionBuilder_Domain_Model_Class_Property[]
+	 */
+	public $staticProperties;
+
+	/**
 	 * constructor of this class
 	 * @param string $className
-	 * @return unknown_type
+	 * @return \Tx_ExtensionBuilder_Domain_Model_Class_Class
 	 */
 	public function __construct($className) {
 		$this->name = $className;
@@ -113,7 +118,8 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	/**
 	 * Setter for a single constant
 	 *
-	 * @param string $constant constant
+	 * @param string $constantName
+	 * @param mixed $constantValue
 	 * @return void
 	 */
 	public function setConstant($constantName, $constantValue) {
@@ -142,6 +148,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	/**
 	 * Getter for a single constant
 	 *
+	 * @param string $constantName
 	 * @return mixed constant value
 	 */
 	public function getConstant($constantName) {
@@ -166,6 +173,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 
 	/**
 	 *
+	 * @param string $methodName
 	 * @return boolean
 	 */
 	public function methodExists($methodName) {
@@ -192,7 +200,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	/**
 	 * Setter for a single method (allows to override an existing method)
 	 *
-	 * @param Tx_ExtensionBuilder_Domain_Model_Class_Method $method
+	 * @param Tx_ExtensionBuilder_Domain_Model_Class_Method $classMethod
 	 * @return void
 	 */
 	public function setMethod(Tx_ExtensionBuilder_Domain_Model_Class_Method $classMethod) {
@@ -211,6 +219,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	/**
 	 * Getter for method
 	 *
+	 * @param string $methodName
 	 * @return Tx_ExtensionBuilder_Domain_Model_Class_Method
 	 */
 	public function getMethod($methodName) {
@@ -317,7 +326,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	/**
 	 * Setter for properties
 	 *
-	 * @param select $properties properties
+	 * @param Tx_ExtensionBuilder_Domain_Model_Class_Property[] $properties properties
 	 * @return void
 	 */
 	public function setProperties($properties) {
@@ -419,8 +428,11 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 		if (!$this->propertyExists($classProperty->getName())) {
 			$this->propertyNames[] = $classProperty->getName();
 			$this->properties[$classProperty->getName()] = $classProperty;
+			return TRUE;
 		}
-		else return FALSE;
+		else {
+			return FALSE;
+		}
 	}
 
 	/**
@@ -438,14 +450,17 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	 * @return boolean success
 	 */
 	public function setProperty($classProperty) {
-		$this->properties[$classProperty->getName()] = $classProperty;
+		/** @var $classProperty Tx_ExtensionBuilder_Domain_Model_Class_Property */
+		if (!empty($classProperty)) {
+			$this->properties[$classProperty->getName()] = $classProperty;
+		}
 	}
 
 
 	/**
 	 * Setter for interfaceNames
 	 *
-	 * @param string $interfaceNames interfaceNames
+	 * @param array $interfaceNames interfaceNames
 	 * @return void
 	 */
 	public function setInterfaceNames($interfaceNames) {
@@ -455,7 +470,7 @@ class Tx_ExtensionBuilder_Domain_Model_Class_Class extends Tx_ExtensionBuilder_D
 	/**
 	 * Getter for interfaceNames
 	 *
-	 * @return string interfaceNames
+	 * @return array interfaceNames
 	 */
 	public function getInterfaceNames() {
 		return $this->interfaceNames;

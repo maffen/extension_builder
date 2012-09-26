@@ -1,9 +1,9 @@
 'type' => 'inline',
-'foreign_table' => '{property.foreignClass.databaseTableName}',
+'foreign_table' => '{property.foreignDatabaseTableName}',
 'minitems' => 0,
 'maxitems' => 1,
 'appearance' => array(
-	'collapse' => 0,
+	'collapseAll' => 0,
 	'levelLinksPosition' => 'top',
 	'showSynchronizationLink' => 1,
 	'showPossibleLocalizationRecords' => 1,

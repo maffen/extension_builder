@@ -58,6 +58,26 @@ class Tx_ExtensionBuilder_Domain_Model_Plugin {
 	protected $key = '';
 
 	/**
+	 * array with configuration arrays
+	 * array('controller' => 'MyController', 'actions' => 'action1,action2')
+	 *
+	 * @var array
+	 */
+	protected $controllerActionCombinations;
+
+	/**
+	 * array with configuration arrays
+	 * array('controller' => 'MyController', 'actions' => 'action1,action2')
+	 * @var array
+	 */
+	protected $noncacheableControllerActions;
+
+	/**
+	 * @var array
+	 */
+	protected $switchableControllerActions;
+
+	/**
 	 * Gets the Name
 	 *
 	 * @return string
@@ -112,6 +132,48 @@ class Tx_ExtensionBuilder_Domain_Model_Plugin {
 	 */
 	public function getKey() {
 		return $this->key;
+	}
+
+	/**
+	 * @param array $controllerActionCombinations
+	 */
+	public function setControllerActionCombinations(array $controllerActionCombinations) {
+		$this->controllerActionCombinations = $controllerActionCombinations;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getControllerActionCombinations() {
+		return $this->controllerActionCombinations;
+	}
+
+	/**
+	 * @param array $noncacheableControllerActions
+	 */
+	public function setNoncacheableControllerActions(array $noncacheableControllerActions) {
+		$this->noncacheableControllerActions = $noncacheableControllerActions;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getNoncacheableControllerActions() {
+		return $this->noncacheableControllerActions;
+	}
+
+	/**
+	 * @param array $switchableControllerActions
+	 */
+	public function setSwitchableControllerActions($switchableControllerActions) {
+		$this->switchableControllerActions = $switchableControllerActions;
+	}
+
+	/**
+	 * @return boolean
+	 */
+	public function getSwitchableControllerActions() {
+		return $this->switchableControllerActions;
 	}
 }
 

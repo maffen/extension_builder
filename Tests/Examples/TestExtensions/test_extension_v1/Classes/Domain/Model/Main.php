@@ -3,8 +3,8 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2011 John Doe <mail@typo3.com>, TYPO3
- *  
+ *  (c) ###YEAR### John Doe <mail@typo3.com>, TYPO3
+ *
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -29,7 +29,7 @@
  *
  *
  * @package test_extension
- * @license http://www.gnu.org/licenses/lgpl.html GNU Lesser General Public License, version 3 or later
+ * @license http://www.gnu.org/licenses/gpl.html GNU General Public License, version 3 or later
  *
  */
 class Tx_TestExtension_Domain_Model_Main extends Tx_Extbase_DomainObject_AbstractEntity {
@@ -99,7 +99,7 @@ class Tx_TestExtension_Domain_Model_Main extends Tx_Extbase_DomainObject_Abstrac
 		 * You may modify the constructor of this class instead
 		 */
 		$this->children2 = new Tx_Extbase_Persistence_ObjectStorage();
-		
+
 		$this->children4 = new Tx_Extbase_Persistence_ObjectStorage();
 	}
 

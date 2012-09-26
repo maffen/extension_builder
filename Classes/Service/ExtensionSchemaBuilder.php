@@ -31,6 +31,10 @@
  */
 class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_singleton {
 
+	/**
+	 * @var Tx_ExtensionBuilder_Configuration_ConfigurationManager
+	 */
+	protected $configurationManager;
 
 	/**
 	 * @param Tx_ExtensionBuilder_Configuration_ConfigurationManager $configurationManager
@@ -38,6 +42,19 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 	 */
 	public function injectConfigurationManager(Tx_ExtensionBuilder_Configuration_ConfigurationManager $configurationManager) {
 		$this->configurationManager = $configurationManager;
+	}
+
+	/**
+	 * @var Tx_ExtensionBuilder_Service_ObjectSchemaBuilder
+	 */
+	protected $objectSchemaBuilder;
+
+	/**
+	 * @param Tx_ExtensionBuilder_Service_ObjectSchemaBuilder $objectSchemaBuilder
+	 * @return void
+	 */
+	public function injectObjectSchemaBuilder(Tx_ExtensionBuilder_Service_ObjectSchemaBuilder $objectSchemaBuilder) {
+		$this->objectSchemaBuilder = $objectSchemaBuilder;
 	}
 
 	/**
@@ -53,30 +70,7 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 			throw new Exception('Extension properties not submitted!');
 		}
 
-		$this->setExtensionProperties($extension,$globalProperties);
-
-
-		if (!empty($globalProperties['originalExtensionKey'])) {
-			// handle renaming of extensions
-			// original extensionKey
-			$extension->setOriginalExtensionKey($globalProperties['originalExtensionKey']);
-			t3lib_div::devlog('Extension setOriginalExtensionKey:' . $extension->getOriginalExtensionKey(), 'extbase', 0, $globalProperties);
-		}
-
-		if (!empty($globalProperties['originalExtensionKey']) && $extension->getOriginalExtensionKey() != $extension->getExtensionKey()) {
-			$settings = $this->configurationManager->getExtensionSettings($extension->getOriginalExtensionKey());
-			// if an extension was renamed, a new extension dir is created and we
-			// have to copy the old settings file to the new extension dir
-			copy($this->configurationManager->getSettingsFile($extension->getOriginalExtensionKey()), $this->configurationManager->getSettingsFile($extension->getExtensionKey()));
-		}
-		else {
-			$settings = $this->configurationManager->getExtensionSettings($extension->getExtensionKey());
-		}
-
-		if (!empty($settings)) {
-			$extension->setSettings($settings);
-			t3lib_div::devlog('Extension settings:' . $extension->getExtensionKey(), 'extbase', 0, $extension->getSettings());
-		}
+		$this->setExtensionProperties($extension, $globalProperties);
 
 		foreach ($globalProperties['persons'] as $personValues) {
 			$person = $this->buildPerson($personValues);
@@ -95,54 +89,108 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 		// classes
 		if (is_array($extensionBuildConfiguration['modules'])) {
 			foreach ($extensionBuildConfiguration['modules'] as $singleModule) {
-				$domainObject = Tx_ExtensionBuilder_Service_ObjectSchemaBuilder::build($singleModule['value']);
+				$domainObject = $this->objectSchemaBuilder->build($singleModule['value']);
+				if ($domainObject->isSubClass() && !$domainObject->isMappedToExistingTable()) {
+					// we try to get the table from Extbase configuration
+					$classSettings = $this->configurationManager->getExtbaseClassConfiguration($domainObject->getParentClass());
+					//t3lib_div::devlog('!isMappedToExistingTable:' . strtolower($domainObject->getParentClass()), 'extension_builder', 0, $classSettings);
+					if (isset($classSettings['tableName'])) {
+						$tableName = $classSettings['tableName'];
+					} else {
+						// we use the default table name
+						$tableName = strtolower($domainObject->getParentClass());
+					}
+					if (!isset($GLOBALS['TCA'][$tableName])) {
+						throw new Exception('Table definitions for table ' . $tableName . ' could not be loaded. You can only map to tables with existing TCA or extend classes of installed extensions!');
+					}
+					$domainObject->setMapToTable($tableName);
+				}
 				$extension->addDomainObject($domainObject);
+			}
+			$classHierarchy = $extension->getClassHierarchy();
+			foreach ($extension->getDomainObjects() as $domainObject) {
+				if (isset($classHierarchy[$domainObject->getClassName()])) {
+					foreach ($classHierarchy[$domainObject->getClassName()] as $directChild) {
+						$domainObject->addChildObject($directChild);
+					}
+				}
 			}
 		}
 
 		// relations
 		if (is_array($extensionBuildConfiguration['wires'])) {
-			foreach ($extensionBuildConfiguration['wires'] as $wire) {
-
-				if ($wire['tgt']['terminal'] !== 'SOURCES') {
-					if ($wire['src']['terminal'] == 'SOURCES') {
-						// this happens if a relation wire was drawn from child to parent
-						// swap the two arrays
-						$tgtModuleId = $wire['src']['moduleId'];
-						$wire['src'] = $wire['tgt'];
-						$wire['tgt'] = array('moduleId' => $tgtModuleId, 'terminal' => 'SOURCES');
-					}
-					else {
-						throw new Exception('A wire has always to connect a relation with a model, not with another relation');
-					}
-				}
-				$srcModuleId = $wire['src']['moduleId'];
-				$relationId = substr($wire['src']['terminal'], 13); // strip "relationWire_"
-				$relationJsonConfiguration = $extensionBuildConfiguration['modules'][$srcModuleId]['value']['relationGroup']['relations'][$relationId];
-				if (!is_array($relationJsonConfiguration)) {
-					t3lib_div::devlog('Error in JSON relation configuration!', 'extension_builder', 3, $extensionBuildConfiguration);
-					$errorMessage = 'Missing relation config in domain object: ' . $extensionBuildConfiguration['modules'][$srcModuleId]['value']['name'];
-					throw new Exception($errorMessage);
-				}
-
-				$foreignClassName = $extensionBuildConfiguration['modules'][$wire['tgt']['moduleId']]['value']['name'];
-				$localClassName = $extensionBuildConfiguration['modules'][$wire['src']['moduleId']]['value']['name'];
-
-				$relation = Tx_ExtensionBuilder_Service_ObjectSchemaBuilder::buildRelation($relationJsonConfiguration);
-
-				$relation->setForeignClass($extension->getDomainObjectByName($foreignClassName));
-
-				$extension->getDomainObjectByName($localClassName)->addProperty($relation);
-			}
+			$this->setExtensionRelations($extensionBuildConfiguration, $extension);
 		}
 
 		return $extension;
+
 	}
 
 	/**
-	 * @param $extension
-	 * @param $propertyConfiguration
-	 * @return Tx_ExtensionBuilder_Domain_Model_Extension
+	 * @param array $extensionBuildConfiguration
+	 * @param Tx_ExtensionBuilder_Domain_Model_Extension $extension
+	 * @throws Exception
+	 */
+	protected function setExtensionRelations($extensionBuildConfiguration, &$extension) {
+		$existingRelations = array();
+		foreach ($extensionBuildConfiguration['wires'] as $wire) {
+			if ($wire['tgt']['terminal'] !== 'SOURCES') {
+				if ($wire['src']['terminal'] == 'SOURCES') {
+					// this happens if a relation wire was drawn from child to parent
+					// swap the two arrays
+					$tgtModuleId = $wire['src']['moduleId'];
+					$wire['src'] = $wire['tgt'];
+					$wire['tgt'] = array('moduleId' => $tgtModuleId, 'terminal' => 'SOURCES');
+				}
+				else {
+					throw new Exception('A wire has always to connect a relation with a model, not with another relation');
+				}
+			}
+			$srcModuleId = $wire['src']['moduleId'];
+			$relationId = substr($wire['src']['terminal'], 13); // strip "relationWire_"
+			$relationJsonConfiguration = $extensionBuildConfiguration['modules'][$srcModuleId]['value']['relationGroup']['relations'][$relationId];
+
+			if (!is_array($relationJsonConfiguration)) {
+				t3lib_div::devlog('Error in JSON relation configuration!', 'extension_builder', 3, $extensionBuildConfiguration);
+				$errorMessage = 'Missing relation config in domain object: ' . $extensionBuildConfiguration['modules'][$srcModuleId]['value']['name'];
+				throw new Exception($errorMessage);
+			}
+
+			$foreignModelName = $extensionBuildConfiguration['modules'][$wire['tgt']['moduleId']]['value']['name'];
+			$localModelName = $extensionBuildConfiguration['modules'][$wire['src']['moduleId']]['value']['name'];
+
+			//$relation = $this->objectSchemaBuilder->buildRelation($relationJsonConfiguration);
+
+			if (!isset($existingRelations[$localModelName])) {
+				$existingRelations[$localModelName] = array();
+			}
+			$domainObject = $extension->getDomainObjectByName($localModelName);
+			$relation = $domainObject->getPropertyByName($relationJsonConfiguration['relationName']);
+			if (!$relation) {
+				t3lib_div::devlog('Relation not found: ' . $localModelName . '->' . $relationJsonConfiguration['relationName'],'extension_builder',2,$relationJsonConfiguration);
+				throw new Exception('Relation not found: ' . $localModelName . '->' . $relationJsonConfiguration['relationName']);
+			}
+			// get unique foreign key names for multiple relations to the same foreign class
+			if (in_array($foreignModelName, $existingRelations[$localModelName])) {
+				if (is_a($relation, Tx_ExtensionBuilder_Domain_Model_DomainObject_Relation_ZeroToManyRelation)) {
+					$relation->setForeignKeyName(strtolower($localModelName) . count($existingRelations[$localModelName]));
+				}
+				if(is_a($relation, Tx_ExtensionBuilder_Domain_Model_DomainObject_Relation_AnyToManyRelation)) {
+					$relation->setUseExtendedRelationTableName(TRUE);
+				}
+			}
+			$existingRelations[$localModelName][] = $foreignModelName;
+
+			$relation->setForeignModel($extension->getDomainObjectByName($foreignModelName));
+		}
+
+	}
+
+
+	/**
+	 * @param Tx_ExtensionBuilder_Domain_Model_Extension $extension
+	 * @param array $propertyConfiguration
+	 * @return void
 	 */
 	protected function setExtensionProperties(&$extension, $propertyConfiguration) {
 		// name
@@ -152,13 +200,32 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 		// extensionKey
 		$extension->setExtensionKey(trim($propertyConfiguration['extensionKey']));
 
+		if($propertyConfiguration['emConf']['disableVersioning']) {
+			$extension->setSupportVersioning(FALSE);
+		}
 
 		// various extension properties
 		$extension->setVersion($propertyConfiguration['emConf']['version']);
 
+		if(!empty($propertyConfiguration['emConf']['dependsOn'])) {
+			$dependencies = array();
+			$lines = t3lib_div::trimExplode("\n",$propertyConfiguration['emConf']['dependsOn']);
+			foreach($lines as $line) {
+				if(strpos($line, '=>')) {
+					list($extensionKey,$version) = t3lib_div::trimExplode('=>',$line);
+					$dependencies[$extensionKey] = $version;
+				}
+			}
+			$extension->setDependencies($dependencies);
+		}
+
+		if(!empty($propertyConfiguration['emConf']['targetVersion'])) {
+			$extension->setTargetVersion(floatval($propertyConfiguration['emConf']['targetVersion']));
+		}
+
 		if (!empty($propertyConfiguration['emConf']['custom_category'])) {
 			$category = $propertyConfiguration['emConf']['custom_category'];
-		} else  {
+		} else {
 			$category = $propertyConfiguration['emConf']['category'];
 		}
 
@@ -168,7 +235,7 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 
 		$extension->setPriority($propertyConfiguration['emConf']['priority']);
 
-			// state
+		// state
 		$state = 0;
 		switch ($propertyConfiguration['emConf']['state']) {
 			case 'alpha':
@@ -189,7 +256,27 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 		}
 		$extension->setState($state);
 
-		return $extension;
+		if (!empty($propertyConfiguration['originalExtensionKey'])) {
+			// handle renaming of extensions
+			// original extensionKey
+			$extension->setOriginalExtensionKey($propertyConfiguration['originalExtensionKey']);
+			t3lib_div::devlog('Extension setOriginalExtensionKey:' . $extension->getOriginalExtensionKey(), 'extbase', 0, $propertyConfiguration);
+		}
+
+		if (!empty($propertyConfiguration['originalExtensionKey']) && $extension->getOriginalExtensionKey() != $extension->getExtensionKey()) {
+			$settings = $this->configurationManager->getExtensionSettings($extension->getOriginalExtensionKey());
+			// if an extension was renamed, a new extension dir is created and we
+			// have to copy the old settings file to the new extension dir
+			copy($this->configurationManager->getSettingsFile($extension->getOriginalExtensionKey()), $this->configurationManager->getSettingsFile($extension->getExtensionKey()));
+		}
+		else {
+			$settings = $this->configurationManager->getExtensionSettings($extension->getExtensionKey());
+		}
+
+		if (!empty($settings)) {
+			$extension->setSettings($settings);
+			t3lib_div::devlog('Extension settings:' . $extension->getExtensionKey(), 'extbase', 0, $extension->getSettings());
+		}
 
 	}
 
@@ -217,8 +304,45 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 		$plugin->setName($pluginValues['name']);
 		$plugin->setType($pluginValues['type']);
 		$plugin->setKey($pluginValues['key']);
+		if (!empty($pluginValues['actions']['controllerActionCombinations'])) {
+			$controllerActionCombinations = array();
+			$lines = t3lib_div::trimExplode("\n", $pluginValues['actions']['controllerActionCombinations'], TRUE);
+			foreach ($lines as $line) {
+				list($controllerName, $actionNames) = t3lib_div::trimExplode('=>', $line);
+				$controllerActionCombinations[$controllerName] = t3lib_div::trimExplode(',', $actionNames);
+			}
+			$plugin->setControllerActionCombinations($controllerActionCombinations);
+		}
+		if (!empty($pluginValues['actions']['noncacheableActions'])) {
+			$noncacheableControllerActions = array();
+			$lines = t3lib_div::trimExplode("\n", $pluginValues['actions']['noncacheableActions'], TRUE);
+			foreach ($lines as $line) {
+				list($controllerName, $actionNames) = t3lib_div::trimExplode('=>', $line);
+				$noncacheableControllerActions[$controllerName] = t3lib_div::trimExplode(',', $actionNames);
+			}
+			$plugin->setNoncacheableControllerActions($noncacheableControllerActions);
+		}
+		if (!empty($pluginValues['actions']['switchableActions'])) {
+			$switchableControllerActions = array();
+			$lines = t3lib_div::trimExplode("\n", $pluginValues['actions']['switchableActions'], TRUE);
+			$switchableAction = array();
+			foreach ($lines as $line) {
+				if (strpos($line, '->') === FALSE) {
+					if (isset($switchableAction['label'])) {
+						// start a new array
+						$switchableAction = array();
+					}
+					$switchableAction['label'] = trim($line);
+				} else {
+					$switchableAction['actions'] = t3lib_div::trimExplode(';', $line, TRUE);
+					$switchableControllerActions[] = $switchableAction;
+				}
+			}
+			$plugin->setSwitchableControllerActions($switchableControllerActions);
+		}
 		return $plugin;
 	}
+
 
 	/**
 	 *
@@ -232,6 +356,15 @@ class Tx_ExtensionBuilder_Service_ExtensionSchemaBuilder implements t3lib_single
 		$backendModule->setTabLabel($backendModuleValues['tabLabel']);
 		$backendModule->setKey($backendModuleValues['key']);
 		$backendModule->setDescription($backendModuleValues['description']);
+		if (!empty($backendModuleValues['actions']['controllerActionCombinations'])) {
+			$controllerActionCombinations = array();
+			$lines = t3lib_div::trimExplode("\n", $backendModuleValues['actions']['controllerActionCombinations'], TRUE);
+			foreach ($lines as $line) {
+				list($controllerName, $actionNames) = t3lib_div::trimExplode('=>', $line);
+				$controllerActionCombinations[$controllerName] = t3lib_div::trimExplode(',', $actionNames);
+			}
+			$backendModule->setControllerActionCombinations($controllerActionCombinations);
+		}
 		return $backendModule;
 	}
 }
