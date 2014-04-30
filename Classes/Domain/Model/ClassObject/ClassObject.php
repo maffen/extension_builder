@@ -329,7 +329,6 @@ class ClassObject extends AbstractObject {
 		if ($this->propertyExists($propertyName)) {
 			if ($this->isTemplate) {
 				$propertyTemplate = clone($this->properties[$propertyName]);
-				$propertyTemplate->setIsTemplate(TRUE);
 				$result = $propertyTemplate;
 			} else {
 				$result = $this->properties[$propertyName];
