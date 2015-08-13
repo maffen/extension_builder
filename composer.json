@@ -1,0 +1,16 @@
+{
+	"name": "maffen/extension-builder",
+	"type": "typo3-cms-extension",
+	"description": "Extension-Builder: used to kickstart new TYPO3 extensions",
+	"homepage": "http://typo3.org",
+	"license": "GPL-2.0+",
+
+	"require": {
+		"typo3/cms-core": ">=6.2.6,<8.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"EBT\\ExtensionBuilder\\": "Classes"
+		}
+	}
+}
